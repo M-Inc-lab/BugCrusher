@@ -50,6 +50,10 @@ Add your bug bounty programs here in this format:
 
 | 2026-04-20 | Atlassian Bug Bounty | Hunt #11 — 1 MEDIUM (Apollo Tracing), 2 INFO (GraphQL Introspection 25,796 types, SDL Enum). Marketplace GraphQL has 25,796 types + AI/Rovo types. CVE-2023-22515 weaponized but no Confluence accessible. All GraphQL mutations require auth. Est. Bounty: $0. Need test instance for P1/P2. | ACTIVE |
 
+| 2026-04-20 | Atlassian Bug Bounty | Hunt #12 — 1 MEDIUM (Apollo Tracing), 2 INFO (GraphQL Introspection 25,796 types, SDL Enum). Marketplace GraphQL has 25,796 types + AI/Rovo types. CVE-2023-22515 weaponized but no Confluence accessible. All GraphQL mutations require auth. Est. Bounty: $0. Need test instance for P1/P2. | ACTIVE |
+
+| 2026-04-20 | Atlassian Bug Bounty | Hunt #13 — 1 MEDIUM (Apollo Tracing), 2 INFO (GraphQL Introspection 25,796 types, SDL Enum). Auth bypass detected on /gateway/api/graphql (public read access). All GraphQL mutations require auth. Est. Bounty: $0. Need test instance for P1/P2. | ACTIVE |
+
 ## Atlassian Bug Bounty Program
 - **Platform:** Bugcrowd
 - **Scope:** 
@@ -60,4 +64,3 @@ Add your bug bounty programs here in this format:
 - **Last Scan:** 2026-04-20
 - **Status:** ACTIVE
 - **Notes:** Use bugbounty-test-<bugcrowd-name>.atlassian.net for cloud testing. No pivoting/post-exploitation. GraphQL, cyclic hydration & large payload processing OOS. Forge Platform in scope with GraphQL endpoint at /gateway/api/graphql
-| 2026-04-20 | Atlassian Bug Bounty | Hunt #12 — 1 MEDIUM (Apollo Tracing), 2 INFO (GraphQL Introspection 25,796 types, SDL Enum). Marketplace GraphQL has 25,796 types + AI/Rovo types. CVE-2023-22515 weaponized but no Confluence accessible. All GraphQL mutations require auth. Est. Bounty: $0. Need test instance for P1/P2. | ACTIVE |
