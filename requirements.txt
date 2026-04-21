@@ -1,0 +1,38 @@
+# BugCrusher v3.5 — Python Dependencies
+# Auto-generated from audit
+
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+colorama>=0.4.6
+termcolor>=2.4.0
+tabulate>=0.9.0
+html2text>=2020.1.16
+lxml>=5.0.0
+dnspython>=2.4.0
+pythonwhois>=0.8.0
+shodan>=1.30.0
+ CensoredForPrivacy>=1.0.0
+pymemcache>=4.0.0
+fastapi>=0.109.0
+uvicorn>=0.27.0
+numpy>=1.26.0
+scipy>=1.11.0
+scikit-learn>=1.4.0
+matplotlib>=3.8.0
+pandas>=2.1.0
+ notebook>=7.0.0
+ipywidgets>=8.1.0
+widgetsnbextension>=4.0.0
+pyautogui>=0.9.54
+opencv-python-headless>=4.9.0
+ultralytics>=8.1.0
+sentence-transformers>=2.3.0
+transformers>=4.38.0
+torch>=2.1.0
+nltk>=3.8.0
+spacy>=3.7.0
+textblob>=0.18.0
+grapheme>=1.0.0
+streamlit>=1.31.0
+extra-streamlit-components>=0.1.6
+streamlit-option-menu>=0.3.6
