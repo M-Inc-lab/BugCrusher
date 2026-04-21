@@ -20,7 +20,11 @@ def passive_recon(target):
             ip = socket.gethostbyname(host)
             found.append((host, ip))
             print(f"  [+] {host} -> {ip}")
-        except:
+        except socket.gaierror:
+            pass
+        except socket.timeout:
+            pass
+        except OSError:
             pass
     return found
 
