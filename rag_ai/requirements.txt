@@ -1,0 +1,17 @@
+# BugCrusher RAG AI — Dependencies
+# Core (required)
+pyyaml>=6.0
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+
+# Fine-tuning (optional — install for model training)
+# torch>=2.0.0
+# transformers>=4.40.0
+# peft>=0.11.0
+# bitsandbytes>=0.43.0
+
+# NeMo Guardrails (optional — install for full security layer)
+# nemoguardrails>=0.10.0
+
+# ACAB-X is imported from local path (../ACAB-X)
+# Set ACABX_PATH env var if not at default location

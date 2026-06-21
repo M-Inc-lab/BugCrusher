@@ -1,0 +1,56 @@
+model:
+  base: "Qwen/Qwen2.5-7B-Instruct"
+  context_window: 131072
+  quantization: "nf4"
+  lora_rank: 16
+  lora_alpha: 32
+  lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+training:
+  learning_rate: 2.0e-5
+  epochs: 3
+  batch_size: 1
+  gradient_accumulation: 4
+  optimizer: "compressed_adamw"
+  cellular_learning: true
+  max_seq_len: 4096
+  warmup_ratio: 0.05
+  save_steps: 100
+
+rag:
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  chunk_size: 512
+  chunk_overlap: 64
+  top_k: 5
+  vector_db: "chroma"
+  db_path: "rag_ai/chroma_db"
+
+guardrails:
+  enabled: true
+  input_rails:
+    - "prompt_injection"
+    - "jailbreak_detect"
+  output_rails:
+    - "pii_scrub"
+    - "hallucination_check"
+  execution_rails:
+    - "tool_permission_gate"
+  allowed_tools:
+    - "nmap"
+    - "nuclei"
+    - "dalfox"
+    - "sqlmap"
+    - "ffuf"
+    - "curl"
+
+agent:
+  persona_path: "SOUL.md"
+  max_tool_calls: 10
+  max_retries: 3
+  report_dir: "hunt_reports"
+  learning_enabled: true
+
+logging:
+  level: "INFO"
+  file: "rag_ai/logs/agent.log"
+  audit: true

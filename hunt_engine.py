@@ -6,6 +6,7 @@ Fixed: No shell=True, no bare except, all domains covered.
 """
 
 import subprocess
+import sys
 import json
 import sqlite3
 import os
@@ -344,9 +345,48 @@ class BugCrusher:
         return report_path
 
 def main():
+    # Check for --ai flag
+    use_ai = "--ai" in sys.argv
+    target_arg = None
+    for arg in sys.argv[1:]:
+        if not arg.startswith("--"):
+            target_arg = arg
+
+    if use_ai:
+        print("[*] RAG AI mode enabled")
+        try:
+            from rag_ai.agent import create_agent
+            agent = create_agent()
+
+            if target_arg:
+                report = agent.hunt(target_arg)
+                print(report)
+            else:
+                hunter = BugCrusher()
+                targets = hunter.load_targets()
+                if not targets:
+                    print("[!] No targets found in targets.md")
+                    return
+                for target in targets:
+                    print(f"\n{'='*50}\nAI HUNTING: {target}\n{'='*50}")
+                    report = agent.hunt(target)
+                    print(report)
+        except ImportError as e:
+            print(f"[!] RAG AI not available: {e}")
+            print("[!] Install deps: pip install -r rag_ai/requirements.txt")
+        return
+
+    # Standard mode
     hunter = BugCrusher()
+
+    if target_arg:
+        print(f"\n{'='*50}\nHUNTING: {target_arg}\n{'='*50}")
+        hunter.recon(target_arg)
+        hunter.scan(target_arg)
+        hunter.generate_report(target_arg)
+        return
+
     targets = hunter.load_targets()
-    
     if not targets:
         print("[!] No targets found in targets.md")
         return

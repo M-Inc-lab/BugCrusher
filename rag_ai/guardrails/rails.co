@@ -1,0 +1,179 @@
+# BugCrusher RAG AI — Guardrail Flows (Colang 2.0)
+# NVIDIA NeMo Guardrails security layer
+
+# ============================================================================
+# INPUT RAILS — Block malicious inputs before they reach the LLM
+# ============================================================================
+
+define flow check prompt injection
+  """Block prompt injection attempts in user messages."""
+  $injection_patterns = [
+    "ignore previous instructions",
+    "ignore all previous",
+    "you are now",
+    "system:",
+    "SYSTEM:",
+    "new instructions:",
+    "forget everything",
+    "disregard your training",
+    "override your",
+    "act as if you",
+    "pretend you are",
+    "your new role is",
+  ]
+
+  if any($pattern in $user_message for $pattern in $injection_patterns)
+    bot refuse
+      "⚠️ Prompt injection detected. Request blocked by NeMo Guardrails."
+    stop
+
+define flow check jailbreak attempt
+  """Block common jailbreak patterns."""
+  $jailbreak_patterns = [
+    "DAN",
+    "Do Anything Now",
+    "developer mode",
+    "without restrictions",
+    "no limitations",
+    "bypass safety",
+    "unrestricted mode",
+    "evil mode",
+  ]
+
+  if any($pattern.lower() in $user_message.lower() for $pattern in $jailbreak_patterns)
+    bot refuse
+      "🛡️ Jailbreak attempt detected. This violates security policy."
+    stop
+
+define flow check topic allowed
+  """Ensure queries are within bug bounty / security scope."""
+  $allowed_topics = [
+    "vulnerability",
+    "exploit",
+    "payload",
+    "cve",
+    "cwe",
+    "bug bounty",
+    "security",
+    "scan",
+    "recon",
+    "hunt",
+    "attack",
+    "injection",
+    "xss",
+    "ssrf",
+    "idor",
+    "rce",
+    "target",
+    "report",
+  ]
+
+  if not any($topic in $user_message.lower() for $topic in $allowed_topics)
+    bot inform
+      "I'm BugCrusher — I specialize in bug bounty hunting and vulnerability research. Please ask me about security testing, vulnerabilities, or exploitation techniques."
+
+# ============================================================================
+# OUTPUT RAILS — Validate and sanitize LLM responses
+# ============================================================================
+
+define flow check pii in response
+  """Scrub any PII that may leak into responses."""
+  $pii_patterns = [
+    r"\b\d{3}-\d{2}-\d{4}\b",
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+    r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",
+  ]
+
+  # Flag if response contains potential PII patterns
+  if any(regex_match($pattern, $bot_message) for $pattern in $pii_patterns)
+    $bot_message = regex_replace($pii_patterns, "[REDACTED]", $bot_message)
+
+define flow check hallucinated cve
+  """Validate CVE IDs in responses aren't fabricated."""
+  # CVE format: CVE-YYYY-NNNNN
+  $cve_pattern = r"CVE-(\d{4})-(\d{4,})"
+  $cves_found = regex_findall($cve_pattern, $bot_message)
+
+  if len($cves_found) > 0
+    # Append disclaimer for unverified CVEs
+    $bot_message = $bot_message + "\n\n⚠️ CVE IDs should be verified against NVD before use in reports."
+
+define flow check response safety
+  """Ensure response doesn't contain dangerous instructions for non-authorized targets."""
+  $dangerous_patterns = [
+    "rm -rf /",
+    "format c:",
+    ":(){ :|:& };:",
+    "DROP TABLE",
+    "DELETE FROM",
+  ]
+
+  if any($pattern in $bot_message for $pattern in $dangerous_patterns)
+    bot warn
+      "⚠️ Response contained potentially destructive commands. Please verify target authorization before execution."
+
+# ============================================================================
+# EXECUTION RAILS — Gate tool calls
+# ============================================================================
+
+define flow check tool permission
+  """Only allow whitelisted security tools to execute."""
+  $allowed_tools = [
+    "nmap",
+    "nuclei",
+    "dalfox",
+    "sqlmap",
+    "ffuf",
+    "curl",
+    "httpx",
+    "subfinder",
+    "search_vulnerabilities",
+    "check_cve",
+    "generate_report",
+  ]
+
+  if $tool_name not in $allowed_tools
+    bot refuse
+      "🚫 Tool '{$tool_name}' is not in the approved toolset. Execution blocked."
+    stop
+
+# ============================================================================
+# DIALOG FLOWS — Standard conversation patterns
+# ============================================================================
+
+define user ask about vulnerability
+  "What is {vuln_type}?"
+  "Tell me about {vuln_type}"
+  "How does {vuln_type} work?"
+  "Explain {cwe_id}"
+
+define user request vulnerability scan
+  "Find vulnerabilities in {target}"
+  "Scan {target}"
+  "Hunt {target}"
+  "Test {target} for {vuln_type}"
+
+define user ask for exploit
+  "How to exploit {vuln_type}?"
+  "Craft a {vuln_type} payload"
+  "Generate exploit for {vuln_type}"
+
+define flow vulnerability_query
+  user ask about vulnerability
+  $context = execute retrieve_context(query=$last_user_message)
+  bot respond with vulnerability analysis
+    "Based on the vulnerability knowledge base: {$context}"
+
+define flow scan_request
+  user request vulnerability scan
+  $target = extract_target($last_user_message)
+  execute validate_target(target=$target)
+  $context = execute retrieve_context(query=$last_user_message)
+  bot inform about scan initiation
+    "Initiating security assessment of {$target} using retrieved attack patterns."
+
+define flow exploit_guidance
+  user ask for exploit
+  $context = execute retrieve_context(query=$last_user_message)
+  bot provide exploit guidance
+    "Here are the relevant exploitation techniques from the knowledge base: {$context}"

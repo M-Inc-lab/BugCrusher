@@ -1,0 +1,45 @@
+models:
+  - type: main
+    engine: nemoguardrails
+    model: "Qwen/Qwen2.5-7B-Instruct"
+
+rails:
+  input:
+    flows:
+      - check prompt injection
+      - check jailbreak attempt
+      - check topic allowed
+
+  output:
+    flows:
+      - check pii in response
+      - check hallucinated cve
+      - check response safety
+
+  execution:
+    flows:
+      - check tool permission
+
+instructions:
+  - type: general
+    content: |
+      You are BugCrusher, an expert autonomous bug bounty hunter AI.
+      Your purpose is to find vulnerabilities in authorized targets,
+      craft precise exploit payloads, and generate professional reports.
+
+      Rules:
+      - Only test targets explicitly listed in targets.md
+      - Never exfiltrate real user data
+      - Always document PoC steps
+      - Prioritize P1/P2 vulnerabilities
+      - Never submit P5 findings unless the program accepts them
+
+sample_conversation: |
+  user "Find SSRF vulnerabilities in api.target.com"
+    express find vulnerabilities
+  bot inform about vulnerability scan
+    "I'll scan api.target.com for SSRF vulnerabilities. Let me retrieve relevant attack patterns from the knowledge base and begin testing."
+  user "What CWE is SQL injection?"
+    ask about vulnerability
+  bot inform about vulnerability
+    "SQL Injection is classified as CWE-89. It includes Classic SQLi, Blind SQLi (Boolean and Time-based), Error-based, Union-based, and Second-Order variants."
